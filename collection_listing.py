@@ -2,7 +2,6 @@ import webbrowser
 import os
 import re
 
-
 # Styles and scripting for the page
 main_page_head = '''
 <!DOCTYPE html>
@@ -59,7 +58,7 @@ main_page_head = '''
         }
         /* Add a gray color and text to the footer */
         footer {
-            background-color: #e5e5e5;
+            background-color: white;
             padding: 18px;
         }
     </style>
@@ -100,7 +99,7 @@ main_page_head = '''
 '''
 
 
-# The main page layout and title bar
+# The main page layout and title bar (Left side)
 main_page_content = '''
   <body>
     <!-- Trailer Video Modal -->
@@ -121,17 +120,37 @@ main_page_content = '''
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
         <div class="container">
           <div class="navbar-header">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="collection_listing.html">
             <!-- Icon on the left of site name -->
-              <img src="http://www.free-icons-download.net/images/movie-icon-72062.png" 
-                 alt="" width="25" height="25" />  Films Vault - Trailers and Information</a>
+              <img src="http://www.free-icons-download.net/images/movie-icon-72062.png" alt="" width="25" height="25" />  Films Vault - Trailers and Information</a>
           </div>
         </div>
       </div>
+
+    <!-- Begin two columns design -->
+    <div class="container"><div class="row"><div class="col-xs-7 col-sm-6 col-lg-8"">{film_tiles}</div>
+'''
+
+# Top 15 list Content (right side)
+second_page_content = '''
+            <div class="col-xs-5 col-sm-6 col-lg-4 sidebar" style="background-color:white" text-center >
+                <h3>Top 15 Movies from IMDB</h3>
+                <table>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Title</th>
+                        <th>Release year</th>
+                    </tr>
+                {top_tiles}                 
+                </table>
+            </div>
     </div>
-    <div class="container text-center">   
-      {film_tiles}
-    </div> 
+  
+    </div>
+    <!-- End two columns design -->
+    
+</div>
+ 
     <!-- Here goes the code for the footer -->
     <div>
        <footer class="container-fluid text-center">
@@ -145,14 +164,25 @@ main_page_content = '''
 
 
 # A single film entry html template
-film_tile_content = '''
-<div class="col-md-5 col-lg-4 film-tile text-center" data-trailer-youtube-id="{trailer_youtube_id}" data-toggle="modal" data-target="#trailer">
-    <img src="{poster}" width="220" height="342">
-    <a href="#" data-toggle="popover" title="Release year: {film_release}" data-content="{film_storyline}"><h2>{film_title}</h2></a>
-</div>
-'''
+film_tile_content = r'''<div class="col-sm-6 film-tile text-center" data-trailer-youtube-id="{trailer_youtube_id}" data-toggle="modal" data-target="#trailer">
+                            <img src="{poster}" width="220" height="342">
+                            <a href="#" data-toggle="popover" title="Release year: {film_release}" data-content="{film_storyline}">
+                                <h3>{film_title}</h3>
+                            </a>
+                        </div>'''
 
 
+# A single top rated film entry html template
+top_tile_content = '''
+ <div class="col-sm-6 film-tile text-center text-primary">
+        <tr>
+            <td>{top_ranking} </td>
+            <td><h5><a href="http://www.imdb.com/title/{top_imdbid}" target="_blank">{top_title}</a></h5></td>
+            <td><h5>{top_year}</h5></td>
+        </tr>
+    </div>'''
+
+    
 def create_film_tiles_content(films):
     # The HTML content for this section of the page
     content = ''
@@ -173,20 +203,38 @@ def create_film_tiles_content(films):
             trailer_youtube_id=trailer_youtube_id,
             film_release=film.release
         )
+        
     return content
 
+# Create top 15 movies list
+def create_top_tiles_content(top_content):
+    # The HTML content for the top 15 movies section of the page
+    top_list = ''
+    
+    for item in top_content["data"]["movies"]:
+        # Append the tile for the film with its content filled in
+        top_list = top_list+top_tile_content.format(
+            top_ranking=item['ranking'],
+            top_title=item['title'],
+            top_year=item['year'],
+            top_imdbid=item['idIMDB']
+    )
+    return top_list
 
-def open_films_page(films):
+def open_films_page(films,top_content):
     # Create or overwrite the output file
     output_file = open('collection_listing.html', 'w')
-
+    
     # Replace the film tiles placeholder generated content
+    # Generate left side of page
     rendered_content = main_page_content.format(
         film_tiles=create_film_tiles_content(films))
-
+    # Generate right side of page
+    rendered_content_2 = second_page_content.format(
+        top_tiles=create_top_tiles_content(top_content))
     
     # Output the file
-    output_file.write(main_page_head + rendered_content)
+    output_file.write(main_page_head + rendered_content + rendered_content_2)
     output_file.close()
 
     # open the output file in the browser (in a new tab, if possible)
